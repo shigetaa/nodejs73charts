@@ -48,7 +48,6 @@ JavaScriptでグラフを描画する場合には、HTMLとWebブラウザー、
 	<!-- Google Chartsの取り込み -->
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<!-- 気温データの読込 -->
-	<script type="text/javascript" src="2014kion.js"></script>
 	<script type="text/javascript">
 		// Charts APIの初期化
 		google.load('visualization', '1.1', { packages: ['line'] });
@@ -57,10 +56,10 @@ JavaScriptでグラフを描画する場合には、HTMLとWebブラウザー、
 		function drawChart() {
 			// データオブジェクトを作成
 			var data = new google.visualization.DataTable();
-			// データのカラムを指定 ----- (*1)
+			// データのカラムを指定
 			data.addColumn('number', 'テストの回数');
-			data.addColumn('number', '英語の点');
-			// データの値を指定 [テストの回数, 英語の点] ---- (*2)
+			data.addColumn('number', '国語の点');
+			// データの値を指定 [テストの回数, 国語の点]
 			data.addRows([
 				[1, 30], [2, 50], [3, 43], [4, 60], [5, 77],
 				[8, 70], [9, 80], [10, 87], [11, 68], [12, 60]
@@ -85,4 +84,84 @@ JavaScriptでグラフを描画する場合には、HTMLとWebブラウザー、
 HTML5に対応したWebブラウザーで上記のHTMLを開くと折れ線グラフが描画されるのが確認できます。
 
 ### 過去の気象データのダウンロード
+平均気温をグラフに描画するプログラム`csv2kion.js`を作成していきます。
+気象庁の過去の気象データをダウンロードページから平均気温をダウンロードしてください。
+CSV形式でダウンロードできます。
+
+[気象庁・過去の気象データ<br>https://www.data.jma.go.jp/obd/stats/etrn/](https://www.data.jma.go.jp/obd/stats/etrn/)
+
+CSV形式でダウンロード出来るとは言え、そのまま利用できる形式ではないので、Excelなどの表計算ソフトで読み込んで、「日付」「平均気温」だけの情報に形成しましょう。
+通常CSVファイルの文字コードは、Shift_JISですが、Javascript で扱いやすいようにUTF-8でファイル名`2022_osaka.csv`として保存します。
+
+その上で、CSVファイルをGoogle Charts 用に二次元配列データに変換して、グラフで表示してみます。
+ここでは、CoffeeScript を利用して、CSVファイルをJSON形式に変換するプログラムを`csv2js.coffee`ファイル名として作成します。
+
+```coffee
+FILE_CSV = './2022_osaka.csv';
+FILE_JS = './2022_osaka.js';
+
+fs = require 'fs'
+
+txt = fs.readFileSync FILE_CSV, "utf-8"
+lines = txt.split "\r\n"
+
+result = [];
+for v in lines
+  cells = v.split ','
+  date_s = cells[0].split("/").splice(1, 2).join("/");
+  temp = parseFloat cells[1]
+  result.push([date_s, temp])
+
+json = JSON.stringify result
+js = "var kion_data = " + json;
+fs.writeFileSync FILE_JS, js, "utf-8"
+console.log "ok"
+```
+以下のコマンドを実行して、JSON形式`2022_osaka.js`ファイルを作成します。
+```bash
+coffee csv2js.coffee
+```
+
+データができたら、これをチャート上に表示してみます。
+チャートを表示するHTMLファイル`2022_osaka.html`を作成します。
+
+```html
+<html>
+
+<head>
+	<!-- Google Chartsの取り込み -->
+	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+	<!-- 気温データの読込 -->
+	<script type="text/javascript" src="2022_osaka.js"></script>
+	<script type="text/javascript">
+		// Charts APIの初期化
+		google.load('visualization', '1.1', { packages: ['line'] });
+		google.setOnLoadCallback(drawChart);
+		// 実際の描画
+		function drawChart() {
+			// データオブジェクトを作成
+			var data = new google.visualization.DataTable();
+			// データのカラムを指定 ----- (*1)
+			data.addColumn('string', '日付');
+			data.addColumn('number', '平均気温');
+			// 値を設定 ---- (*2)
+			data.addRows(kion_data);
+			// 描画オプション
+			var options = {
+				width: 800, height: 400
+			};
+			// 描画
+			var chart = new google.charts.Line(document.getElementById('chart'));
+			chart.draw(data, options);
+		}
+	</script>
+</head>
+
+<body>
+	<div id="chart"></div>
+</body>
+
+</html>
+```
+HTMLファイルをWebブラウザーで表示して、チャートが表示出来ているか確認してみましょう。
 

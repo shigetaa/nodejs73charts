@@ -4,6 +4,7 @@
 	<!-- Google Chartsの取り込み -->
 	<script type="text/javascript" src="https://www.google.com/jsapi"></script>
 	<!-- 気温データの読込 -->
+	<script type="text/javascript" src="2022_osaka.js"></script>
 	<script type="text/javascript">
 		// Charts APIの初期化
 		google.load('visualization', '1.1', { packages: ['line'] });
@@ -12,14 +13,11 @@
 		function drawChart() {
 			// データオブジェクトを作成
 			var data = new google.visualization.DataTable();
-			// データのカラムを指定
-			data.addColumn('number', 'テストの回数');
-			data.addColumn('number', '国語の点');
-			// データの値を指定 [テストの回数, 国語の点]
-			data.addRows([
-				[1, 30], [2, 50], [3, 43], [4, 60], [5, 77],
-				[8, 70], [9, 80], [10, 87], [11, 68], [12, 60]
-			]);
+			// データのカラムを指定 ----- (*1)
+			data.addColumn('string', '日付');
+			data.addColumn('number', '平均気温');
+			// 値を設定 ---- (*2)
+			data.addRows(kion_data);
 			// 描画オプション
 			var options = {
 				width: 800, height: 400
